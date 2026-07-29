@@ -110,6 +110,8 @@ On-Chain Payout & Reputation Indexing
               │ Live Community Reputation │
               │     & Feed Dashboard      │
               └─────────────┬─────────────┘
+```
+
 🔄 Lifecycle Execution Steps
 Plaintext
 01. Create & Lock
