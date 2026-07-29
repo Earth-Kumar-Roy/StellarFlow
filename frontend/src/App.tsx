@@ -21,6 +21,7 @@ export default function App() {
     publicKey,
     xlmBalance,
     isLoading: isWalletLoading,
+    error: walletError,
     connectWallet,
     disconnectWallet,
     refreshBalance,
@@ -32,7 +33,7 @@ export default function App() {
     isFetching,
     isSubmitting,
     txHash,
-    error,
+    error: escrowError,
     fetchEscrow,
     createEscrow,
     submitWorkForReview,
@@ -57,12 +58,19 @@ export default function App() {
     fetchEscrow(publicKey);
   }, [fetchEscrow, publicKey]);
 
-  // Sync local error state from hook
+  // Sync wallet error state (e.g. extension not installed) to top notification banner
   useEffect(() => {
-    if (error) {
-      setBannerError(error);
+    if (walletError) {
+      setBannerError(walletError);
     }
-  }, [error]);
+  }, [walletError]);
+
+  // Sync contract error state to top notification banner
+  useEffect(() => {
+    if (escrowError) {
+      setBannerError(escrowError);
+    }
+  }, [escrowError]);
 
   // Handler for escrow creation
   const handleCreateEscrowSubmit = async (

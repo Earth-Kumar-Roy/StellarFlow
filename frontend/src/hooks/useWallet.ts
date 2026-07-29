@@ -79,6 +79,19 @@ export function useWallet() {
     try {
       setIsLoading(true);
       setError(null);
+
+      // 1. Check if extension is installed in the browser
+      const connectedRes = await isConnected();
+      const connected =
+        typeof connectedRes === 'boolean'
+          ? connectedRes
+          : Boolean((connectedRes as any)?.isConnected);
+
+      if (!connected) {
+        throw new Error('Freighter wallet not installed. Please install the Freighter extension.');
+      }
+
+      // 2. Request permission and address
       await setAllowed();
 
       const accessRes = await requestAccess();
