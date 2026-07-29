@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const DocsPage = () => {
-  const demoUrl = 'https://drive.google.com/file/d/1OR1QGHJBFW7D19ROtxp_Zyf-B1wCNHhl/view?usp=drive_link';
+  const demoUrl = 'https://drive.google.com/file/d/1O3dk2ECn6y7M0LR0811sXVriUs0NWygM/view?usp=drive_link';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-12">
