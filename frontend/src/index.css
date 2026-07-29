@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+body {
+  background-color: var(--color-slate-950, #020617);
+  color: var(--color-slate-100, #f8fafc);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Clear default Vite centering restrictions */
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  text-align: left;
+}
