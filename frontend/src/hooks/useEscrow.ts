@@ -14,14 +14,12 @@ import { STELLAR_CONFIG } from '../config/stellar';
 import { EscrowStatus } from '../types/escrow';
 import type { Escrow } from '../types/escrow';
 
-// Helper: Convert XLM (e.g., "100") to Stroops BigInt (e.g., 1000000000n)
 const toStroops = (xlmAmount: string | number): bigint => {
   const parsed = typeof xlmAmount === 'string' ? parseFloat(xlmAmount) : xlmAmount;
   if (isNaN(parsed) || parsed <= 0) return 0n;
   return BigInt(Math.round(parsed * 10_000_000));
 };
 
-// Helper: Convert Stroops (BigInt/number/string) back to standard XLM string
 const fromStroops = (stroops: any): string => {
   if (!stroops) return '0';
   const val = Number(stroops);
@@ -30,15 +28,47 @@ const fromStroops = (stroops: any): string => {
 
 export function useEscrow() {
   const [escrow, setEscrow] = useState<Escrow | null>(null);
+  const [userEscrows, setUserEscrows] = useState<Escrow[]>([]);
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
-  const contract = new Contract(STELLAR_CONFIG.contractId);
+  // Helper: Save an escrow into wallet's history list in local storage
+  const persistEscrowLocally = (userAddress: string, newEscrow: Escrow) => {
+    if (!userAddress) return;
+    try {
+      const key = `stellarflow_user_escrows_${userAddress.toLowerCase()}`;
+      const existing: Escrow[] = JSON.parse(localStorage.getItem(key) || '[]');
 
-  // Helper: Log transaction to Google Apps Script Web App
+      const index = existing.findIndex(
+        (e) => e.client === newEscrow.client && e.deadline === newEscrow.deadline
+      );
+
+      if (index >= 0) {
+        existing[index] = newEscrow;
+      } else {
+        existing.unshift(newEscrow);
+      }
+
+      localStorage.setItem(key, JSON.stringify(existing));
+    } catch (err) {
+      console.warn('Failed to save local escrow history:', err);
+    }
+  };
+
+  // Helper: Load local escrows for a specific wallet address
+  const loadLocalEscrows = (userAddress: string | null): Escrow[] => {
+    if (!userAddress) return [];
+    try {
+      const key = `stellarflow_user_escrows_${userAddress.toLowerCase()}`;
+      return JSON.parse(localStorage.getItem(key) || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  // Helper: Log transaction to Google Sheet
   const logTransactionToSheet = async (payload: Record<string, any>) => {
     try {
       await fetch(STELLAR_CONFIG.appsScriptUrl, {
@@ -51,12 +81,15 @@ export function useEscrow() {
     }
   };
 
-  // Read current Escrow state from contract
-  const fetchEscrow = useCallback(async () => {
-    try {
-      setIsFetching(true);
-      setError(null);
+  // Fetch Escrow
+  const fetchEscrow = useCallback(async (activePublicKey?: string | null) => {
+    setIsFetching(true);
+    setError(null);
 
+    const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
+    const contract = new Contract(STELLAR_CONFIG.contractId);
+
+    try {
       const dummyAccount = new Account(
         'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
         '0'
@@ -74,13 +107,9 @@ export function useEscrow() {
 
       if (rpc.Api.isSimulationSuccess(simRes) && simRes.result) {
         const rawNative: any = scValToNative(simRes.result.retval);
+        const savedMeta = JSON.parse(localStorage.getItem('stellarflow_escrow_meta') || '{}');
 
-        // Retrieve local metadata names/emails if saved during creation
-        const savedMeta = JSON.parse(
-          localStorage.getItem('stellarflow_escrow_meta') || '{}'
-        );
-
-        const escrowData: Escrow = {
+        const liveEscrow: Escrow = {
           client: rawNative.client,
           clientName: savedMeta.clientName || 'Client',
           clientEmail: savedMeta.clientEmail || '',
@@ -88,7 +117,6 @@ export function useEscrow() {
           freelancerName: savedMeta.freelancerName || 'Freelancer',
           freelancerEmail: savedMeta.freelancerEmail || '',
           token: rawNative.token,
-          // Format amounts back to human-readable XLM
           totalAmount: fromStroops(rawNative.total_amount),
           releasedAmount: fromStroops(rawNative.released_amount),
           deadline: Number(rawNative.deadline),
@@ -101,7 +129,11 @@ export function useEscrow() {
             isInReview: savedMeta[`review_m_${m.id}`] || false,
           })),
         };
-        setEscrow(escrowData);
+
+        persistEscrowLocally(rawNative.client, liveEscrow);
+        persistEscrowLocally(rawNative.freelancer, liveEscrow);
+
+        setEscrow(liveEscrow);
       } else {
         setEscrow(null);
       }
@@ -109,12 +141,19 @@ export function useEscrow() {
       console.error('Fetch Escrow Error:', err);
       setEscrow(null);
     } finally {
+      if (activePublicKey) {
+        setUserEscrows(loadLocalEscrows(activePublicKey));
+      } else {
+        setUserEscrows([]);
+      }
       setIsFetching(false);
     }
   }, []);
 
   // Submit signed transaction helper
   const submitSignedTransaction = async (preparedTx: any): Promise<string> => {
+    const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
+
     const signedResult = await signTransaction(preparedTx.toXDR(), {
       networkPassphrase: STELLAR_CONFIG.networkPassphrase,
     });
@@ -135,14 +174,13 @@ export function useEscrow() {
         await new Promise((r) => setTimeout(r, 2000));
         statusRes = await server.getTransaction(sendRes.hash);
       }
-      await fetchEscrow();
       return sendRes.hash;
     } else {
       throw new Error('Transaction submission failed on Testnet.');
     }
   };
 
-  // Initialize Escrow Contract
+  // Create Escrow
   const createEscrow = async (
     userAddress: string,
     clientName: string,
@@ -160,9 +198,10 @@ export function useEscrow() {
       setError(null);
       setTxHash(null);
 
-      const account = await server.getAccount(userAddress);
+      const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
+      const contract = new Contract(STELLAR_CONFIG.contractId);
 
-      // Convert input XLM amounts to Stroops (10^7) before passing to smart contract
+      const account = await server.getAccount(userAddress);
       const totalStroops = toStroops(totalAmount);
 
       const formattedMilestones = milestones.map((m) =>
@@ -207,18 +246,36 @@ export function useEscrow() {
       const preparedTx = await server.prepareTransaction(tx);
       const hash = await submitSignedTransaction(preparedTx);
 
-      // Store metadata in LocalStorage for persistence across updates
+      const newEscrowObj: Escrow = {
+        client: userAddress,
+        clientName,
+        clientEmail,
+        freelancer,
+        freelancerName,
+        freelancerEmail,
+        token,
+        totalAmount,
+        releasedAmount: '0',
+        deadline,
+        status: EscrowStatus.Active,
+        milestones: milestones.map((m) => ({
+          ...m,
+          isCompleted: false,
+          isInReview: false,
+        })),
+      };
+
+      persistEscrowLocally(userAddress, newEscrowObj);
+      persistEscrowLocally(freelancer, newEscrowObj);
+
+      setEscrow(newEscrowObj);
+      setUserEscrows(loadLocalEscrows(userAddress));
+
       localStorage.setItem(
         'stellarflow_escrow_meta',
-        JSON.stringify({
-          clientName,
-          clientEmail,
-          freelancerName,
-          freelancerEmail,
-        })
+        JSON.stringify({ clientName, clientEmail, freelancerName, freelancerEmail })
       );
 
-      // Log ESCROW_CREATED event to Google Sheet
       await logTransactionToSheet({
         eventType: 'ESCROW_CREATED',
         clientName,
@@ -237,39 +294,44 @@ export function useEscrow() {
     }
   };
 
-  // Submit Work for Review (Freelancer trigger)
-  const submitWorkForReview = async (milestoneId: number) => {
+  // Submit Work for Review (Target-aware)
+  const submitWorkForReview = async (milestoneId: number, targetEscrow?: Escrow) => {
     try {
-      if (!escrow) return;
-      const milestone = escrow.milestones.find((m) => m.id === milestoneId);
+      const activeEscrow = targetEscrow || escrow;
+      if (!activeEscrow) return;
+
+      const milestone = activeEscrow.milestones.find((m) => m.id === milestoneId);
       if (!milestone) return;
 
-      const savedMeta = JSON.parse(
-        localStorage.getItem('stellarflow_escrow_meta') || '{}'
-      );
+      const savedMeta = JSON.parse(localStorage.getItem('stellarflow_escrow_meta') || '{}');
       savedMeta[`review_m_${milestoneId}`] = true;
       localStorage.setItem('stellarflow_escrow_meta', JSON.stringify(savedMeta));
 
-      setEscrow((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          milestones: prev.milestones.map((m) =>
-            m.id === milestoneId ? { ...m, isInReview: true } : m
-          ),
-        };
-      });
+      const updatedEscrow: Escrow = {
+        ...activeEscrow,
+        milestones: activeEscrow.milestones.map((m) =>
+          m.id === milestoneId ? { ...m, isInReview: true } : m
+        ),
+      };
 
-      // Log WORK_SUBMITTED event to Google Sheet
+      persistEscrowLocally(activeEscrow.client, updatedEscrow);
+      persistEscrowLocally(activeEscrow.freelancer, updatedEscrow);
+
+      if (activeEscrow.freelancer) {
+        setUserEscrows(loadLocalEscrows(activeEscrow.freelancer));
+      }
+
+      setEscrow(updatedEscrow);
+
       await logTransactionToSheet({
         eventType: 'WORK_SUBMITTED',
-        clientName: escrow.clientName || 'Client',
-        clientAddress: escrow.client,
-        clientEmail: escrow.clientEmail,
-        freelancerName: escrow.freelancerName || 'Freelancer',
-        freelancerAddress: escrow.freelancer,
-        freelancerEmail: escrow.freelancerEmail,
-        totalAmount: escrow.totalAmount,
+        clientName: activeEscrow.clientName || 'Client',
+        clientAddress: activeEscrow.client,
+        clientEmail: activeEscrow.clientEmail,
+        freelancerName: activeEscrow.freelancerName || 'Freelancer',
+        freelancerAddress: activeEscrow.freelancer,
+        freelancerEmail: activeEscrow.freelancerEmail,
+        totalAmount: activeEscrow.totalAmount,
         milestoneId,
         milestoneDescription: milestone.description,
         milestoneAmount: milestone.amount,
@@ -280,12 +342,15 @@ export function useEscrow() {
     }
   };
 
-  // Approve Milestone invocation
-  const approveMilestone = async (userAddress: string, milestoneId: number) => {
+  // Approve Milestone (Target-aware & clean status persistence)
+  const approveMilestone = async (userAddress: string, milestoneId: number, targetEscrow?: Escrow) => {
     try {
       setIsSubmitting(true);
       setError(null);
       setTxHash(null);
+
+      const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
+      const contract = new Contract(STELLAR_CONFIG.contractId);
 
       const account = await server.getAccount(userAddress);
       const milestoneVal = nativeToScVal(milestoneId, { type: 'u32' });
@@ -301,25 +366,48 @@ export function useEscrow() {
       const preparedTx = await server.prepareTransaction(tx);
       const hash = await submitSignedTransaction(preparedTx);
 
-      const milestone = escrow?.milestones.find((m) => m.id === milestoneId);
+      const activeEscrow = targetEscrow || escrow;
+      const milestone = activeEscrow?.milestones.find((m) => m.id === milestoneId);
 
-      // Reset review flag in localStorage
-      const savedMeta = JSON.parse(
-        localStorage.getItem('stellarflow_escrow_meta') || '{}'
-      );
-      delete savedMeta[`review_m_${milestoneId}`];
-      localStorage.setItem('stellarflow_escrow_meta', JSON.stringify(savedMeta));
+      if (activeEscrow) {
+        // 1. Remove review flag from metadata
+        const savedMeta = JSON.parse(localStorage.getItem('stellarflow_escrow_meta') || '{}');
+        delete savedMeta[`review_m_${milestoneId}`];
+        localStorage.setItem('stellarflow_escrow_meta', JSON.stringify(savedMeta));
 
-      // Log MILESTONE_RELEASED event to Google Sheet
+        // 2. Mark milestone as completed and cleared from review
+        const updatedMilestones = activeEscrow.milestones.map((m) =>
+          m.id === milestoneId ? { ...m, isCompleted: true, isInReview: false } : m
+        );
+
+        // 3. Increment total released amount
+        const newReleased = (
+          parseFloat(activeEscrow.releasedAmount || '0') + parseFloat(milestone?.amount || '0')
+        ).toString();
+
+        const updatedEscrow: Escrow = {
+          ...activeEscrow,
+          releasedAmount: newReleased,
+          milestones: updatedMilestones,
+        };
+
+        // 4. Persist updated escrow state across local storage
+        persistEscrowLocally(activeEscrow.client, updatedEscrow);
+        persistEscrowLocally(activeEscrow.freelancer, updatedEscrow);
+
+        setEscrow(updatedEscrow);
+        setUserEscrows(loadLocalEscrows(userAddress));
+      }
+
       await logTransactionToSheet({
         eventType: 'MILESTONE_RELEASED',
-        clientName: escrow?.clientName || 'Client',
+        clientName: activeEscrow?.clientName || 'Client',
         clientAddress: userAddress,
-        clientEmail: escrow?.clientEmail,
-        freelancerName: escrow?.freelancerName || 'Freelancer',
-        freelancerAddress: escrow?.freelancer || '',
-        freelancerEmail: escrow?.freelancerEmail,
-        totalAmount: escrow?.totalAmount || '',
+        clientEmail: activeEscrow?.clientEmail,
+        freelancerName: activeEscrow?.freelancerName || 'Freelancer',
+        freelancerAddress: activeEscrow?.freelancer || '',
+        freelancerEmail: activeEscrow?.freelancerEmail,
+        totalAmount: activeEscrow?.totalAmount || '',
         milestoneId,
         milestoneDescription: milestone?.description || '',
         milestoneAmount: milestone?.amount || '',
@@ -332,12 +420,15 @@ export function useEscrow() {
     }
   };
 
-  // Refund Expired Escrow invocation
-  const refundExpired = async (userAddress: string) => {
+  // Refund Expired Escrow
+  const refundExpired = async (userAddress: string, targetEscrow?: Escrow) => {
     try {
       setIsSubmitting(true);
       setError(null);
       setTxHash(null);
+
+      const server = new rpc.Server(STELLAR_CONFIG.rpcUrl);
+      const contract = new Contract(STELLAR_CONFIG.contractId);
 
       const account = await server.getAccount(userAddress);
 
@@ -352,16 +443,25 @@ export function useEscrow() {
       const preparedTx = await server.prepareTransaction(tx);
       const hash = await submitSignedTransaction(preparedTx);
 
-      // Log REFUNDED event to Google Sheet
+      const activeEscrow = targetEscrow || escrow;
+
+      if (activeEscrow) {
+        const updatedEscrow = { ...activeEscrow, status: EscrowStatus.Refunded };
+        persistEscrowLocally(activeEscrow.client, updatedEscrow);
+        persistEscrowLocally(activeEscrow.freelancer, updatedEscrow);
+        setUserEscrows(loadLocalEscrows(userAddress));
+        setEscrow(updatedEscrow);
+      }
+
       await logTransactionToSheet({
         eventType: 'REFUNDED',
-        clientName: escrow?.clientName || 'Client',
+        clientName: activeEscrow?.clientName || 'Client',
         clientAddress: userAddress,
-        clientEmail: escrow?.clientEmail,
-        freelancerName: escrow?.freelancerName || 'Freelancer',
-        freelancerAddress: escrow?.freelancer || '',
-        freelancerEmail: escrow?.freelancerEmail,
-        totalAmount: escrow?.totalAmount || '',
+        clientEmail: activeEscrow?.clientEmail,
+        freelancerName: activeEscrow?.freelancerName || 'Freelancer',
+        freelancerAddress: activeEscrow?.freelancer || '',
+        freelancerEmail: activeEscrow?.freelancerEmail,
+        totalAmount: activeEscrow?.totalAmount || '',
         txHash: hash,
       });
     } catch (err: any) {
@@ -373,6 +473,7 @@ export function useEscrow() {
 
   return {
     escrow,
+    userEscrows,
     isFetching,
     isSubmitting,
     txHash,

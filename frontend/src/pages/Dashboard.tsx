@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { EscrowCard } from '../components/EscrowCard';
 import type { Escrow } from '../types/escrow';
@@ -15,17 +15,19 @@ import {
 
 interface DashboardProps {
   escrow: Escrow | null;
+  userEscrows?: Escrow[];
   publicKey: string | null;
   isFetching: boolean;
   isSubmitting: boolean;
-  onFetchEscrow: () => void;
-  onSubmitWorkForReview: (id: number) => void;
-  onApproveMilestone: (id: number) => void;
-  onRefundExpired: () => void;
+  onFetchEscrow: (activePublicKey?: string | null) => void;
+  onSubmitWorkForReview: (id: number, targetEscrow?: Escrow) => void;
+  onApproveMilestone: (id: number, targetEscrow?: Escrow) => void;
+  onRefundExpired: (targetEscrow?: Escrow) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   escrow,
+  userEscrows = [],
   publicKey,
   isFetching,
   isSubmitting,
@@ -34,12 +36,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onApproveMilestone,
   onRefundExpired,
 }) => {
-  useEffect(() => {
-    onFetchEscrow();
-  }, [onFetchEscrow]);
+  // Merge live on-chain escrow with locally saved user escrows
+  const displayEscrows: Escrow[] = useMemo(() => {
+    const combinedMap = new Map<string, Escrow>();
 
-  const isClient = publicKey && escrow ? publicKey === escrow.client : false;
-  const isFreelancer = publicKey && escrow ? publicKey === escrow.freelancer : false;
+    userEscrows.forEach((e) => {
+      const key = `${e.client}_${e.freelancer}_${e.deadline}`;
+      combinedMap.set(key, e);
+    });
+
+    if (escrow) {
+      const liveKey = `${escrow.client}_${escrow.freelancer}_${escrow.deadline}`;
+      combinedMap.set(liveKey, escrow);
+    }
+
+    return Array.from(combinedMap.values());
+  }, [escrow, userEscrows]);
+
+  const isClient = publicKey && displayEscrows.some((e) => e.client === publicKey);
+  const isFreelancer = publicKey && displayEscrows.some((e) => e.freelancer === publicKey);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
@@ -57,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={onFetchEscrow}
+            onClick={() => onFetchEscrow(publicKey)}
             disabled={isFetching}
             className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700/80 transition"
             title="Refresh Ledger State"
@@ -85,10 +100,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Role Context Notification Banner */}
-      {publicKey && escrow && (
+      {publicKey && displayEscrows.length > 0 && (
         <div className="p-4 rounded-2xl border backdrop-blur-md transition-all">
           {isClient && (
-            <div className="flex items-center space-x-3 text-indigo-300 bg-indigo-950/40 border-indigo-500/30 p-3.5 rounded-xl border">
+            <div className="flex items-center space-x-3 text-indigo-300 bg-indigo-950/40 border-indigo-500/30 p-3.5 rounded-xl border mb-2">
               <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" />
               <div className="text-xs">
                 <strong className="text-indigo-200">Logged in as Client:</strong> You have authority to review submitted milestones and authorize payout releases to the freelancer.
@@ -107,7 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center space-x-3 text-slate-300 bg-slate-900/60 border-slate-700/60 p-3.5 rounded-xl border">
               <Eye className="w-5 h-5 text-slate-400 shrink-0" />
               <div className="text-xs">
-                <strong className="text-slate-200">Observer Mode:</strong> Your wallet is not a primary participant in this active contract agreement.
+                <strong className="text-slate-200">Observer Mode:</strong> Your wallet is not a primary participant in these contract agreements.
               </div>
             </div>
           )}
@@ -115,20 +130,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Main Content Area */}
-      {isFetching ? (
+      {isFetching && displayEscrows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-slate-900/40 border border-slate-800/80 rounded-3xl">
           <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-sm text-slate-300 font-medium">Querying Soroban Testnet RPC...</p>
         </div>
-      ) : escrow ? (
-        <EscrowCard
-          escrow={escrow}
-          userAddress={publicKey}
-          isSubmitting={isSubmitting}
-          onSubmitWorkForReview={onSubmitWorkForReview}
-          onApproveMilestone={onApproveMilestone}
-          onRefundExpired={onRefundExpired}
-        />
+      ) : displayEscrows.length > 0 ? (
+        <div className="space-y-8">
+          {displayEscrows.map((escrowItem, idx) => (
+            <EscrowCard
+              key={`${escrowItem.client}_${escrowItem.deadline}_${idx}`}
+              escrow={escrowItem}
+              userAddress={publicKey}
+              isSubmitting={isSubmitting}
+              onSubmitWorkForReview={(id: number) => onSubmitWorkForReview(id, escrowItem)}
+              onApproveMilestone={(id: number) => onApproveMilestone(id, escrowItem)}
+              onRefundExpired={() => onRefundExpired(escrowItem)}
+            />
+          ))}
+        </div>
       ) : (
         /* Empty State */
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-slate-900/40 border border-slate-800/80 rounded-3xl space-y-5">

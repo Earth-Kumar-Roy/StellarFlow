@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { CreateEscrowModal } from './components/CreateEscrowModal';
@@ -27,6 +27,7 @@ export default function App() {
 
   const {
     escrow,
+    userEscrows,
     isFetching,
     isSubmitting,
     txHash,
@@ -42,10 +43,18 @@ export default function App() {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [bannerError, setBannerError] = useState<string | null>(null);
 
-  // Sync contract state on mount
+  // Stable handler for fetching escrows
+  const handleFetchEscrow = useCallback(
+    (pk?: string | null) => {
+      fetchEscrow(pk !== undefined ? pk : publicKey);
+    },
+    [fetchEscrow, publicKey]
+  );
+
+  // Sync contract & local user escrow state when wallet connects/changes
   useEffect(() => {
-    fetchEscrow();
-  }, [fetchEscrow]);
+    fetchEscrow(publicKey);
+  }, [fetchEscrow, publicKey]);
 
   // Sync local error state from hook
   useEffect(() => {
@@ -152,10 +161,11 @@ export default function App() {
               element={
                 <Dashboard
                   escrow={escrow}
+                  userEscrows={userEscrows}
                   publicKey={publicKey}
                   isFetching={isFetching}
                   isSubmitting={isSubmitting}
-                  onFetchEscrow={fetchEscrow}
+                  onFetchEscrow={handleFetchEscrow}
                   onSubmitWorkForReview={submitWorkForReview}
                   onApproveMilestone={async (id: number) => {
                     if (publicKey) {
@@ -219,7 +229,7 @@ export default function App() {
           isOpen={isFeedbackModalOpen}
           userAddress={publicKey}
           onClose={() => setIsFeedbackModalOpen(false)}
-          onFeedbackSubmitted={fetchEscrow}
+          onFeedbackSubmitted={() => fetchEscrow(publicKey)}
         />
 
         {/* Global Footer */}

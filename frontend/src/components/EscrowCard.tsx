@@ -18,9 +18,9 @@ export interface EscrowCardProps {
   escrow: Escrow;
   userAddress: string | null;
   isSubmitting: boolean;
-  onSubmitWorkForReview?: (id: number) => void;
-  onApproveMilestone: (id: number) => void;
-  onRefundExpired: () => void;
+  onSubmitWorkForReview?: (id: number, targetEscrow?: Escrow) => void;
+  onApproveMilestone: (id: number, targetEscrow?: Escrow) => void;
+  onRefundExpired: (targetEscrow?: Escrow) => void;
 }
 
 export const EscrowCard: React.FC<EscrowCardProps> = ({
@@ -31,8 +31,14 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
   onApproveMilestone,
   onRefundExpired,
 }) => {
-  const isClient = userAddress === escrow.client;
-  const isFreelancer = userAddress === escrow.freelancer;
+  const isClient = userAddress ? userAddress.toLowerCase() === escrow.client.toLowerCase() : false;
+  const isFreelancer = userAddress ? userAddress.toLowerCase() === escrow.freelancer.toLowerCase() : false;
+
+  // Compute if all milestones in this escrow are completed
+  const allMilestonesCompleted = escrow.milestones.length > 0 && 
+    escrow.milestones.every((m) => m.isCompleted);
+
+  const activeStatus = allMilestonesCompleted ? EscrowStatus.Completed : escrow.status;
 
   // Live Countdown State
   const [timeLeft, setTimeLeft] = useState<{
@@ -114,10 +120,10 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
 
         <span
           className={`text-xs font-bold px-4 py-1.5 rounded-full border uppercase tracking-wider shadow-sm ${getStatusBadge(
-            escrow.status
+            activeStatus
           )}`}
         >
-          {escrow.status}
+          {activeStatus}
         </span>
       </div>
 
@@ -151,7 +157,7 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
       </div>
 
       {/* Countdown Timer Display */}
-      {escrow.status === EscrowStatus.Active && (
+      {activeStatus === EscrowStatus.Active && (
         <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-5 my-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
@@ -278,12 +284,12 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
         isClient={isClient}
         isFreelancer={isFreelancer}
         isSubmitting={isSubmitting}
-        onSubmitWork={onSubmitWorkForReview}
-        onApprove={onApproveMilestone}
+        onSubmitWork={(id) => onSubmitWorkForReview?.(id, escrow)}
+        onApprove={(id) => onApproveMilestone(id, escrow)}
       />
 
       {/* Expired Refund Action Banner */}
-      {isClient && timeLeft.isExpired && escrow.status === EscrowStatus.Active && (
+      {isClient && timeLeft.isExpired && activeStatus === EscrowStatus.Active && (
         <div className="mt-8 p-5 bg-rose-950/40 border border-rose-800/80 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <AlertCircle className="w-6 h-6 text-rose-400 shrink-0" />
@@ -295,7 +301,7 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
             </div>
           </div>
           <button
-            onClick={onRefundExpired}
+            onClick={() => onRefundExpired(escrow)}
             disabled={isSubmitting}
             className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold px-6 py-3 rounded-xl transition duration-150 shadow-lg shadow-rose-600/30 whitespace-nowrap"
           >
