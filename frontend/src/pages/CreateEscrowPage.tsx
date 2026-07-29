@@ -14,6 +14,7 @@ import {
 
 interface CreateEscrowPageProps {
   isSubmitting: boolean;
+  publicKey?: string | null;
   onSubmit: (
     clientName: string,
     clientEmail: string,
@@ -29,6 +30,7 @@ interface CreateEscrowPageProps {
 
 export const CreateEscrowPage: React.FC<CreateEscrowPageProps> = ({
   isSubmitting,
+  publicKey,
   onSubmit,
 }) => {
   const navigate = useNavigate();
@@ -76,8 +78,19 @@ export const CreateEscrowPage: React.FC<CreateEscrowPageProps> = ({
   const totalVal = parseFloat(totalAmount) || 0;
   const isAmountMismatch = totalVal > 0 && milestoneSum !== totalVal;
 
+  // Validation: Freelancer address cannot match client's connected wallet address
+  const isSelfAddress = Boolean(
+    publicKey && freelancer.trim().toLowerCase() === publicKey.trim().toLowerCase()
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isSelfAddress) {
+      alert('Freelancer address cannot be the same as your connected client wallet address.');
+      return;
+    }
+
     if (isAmountMismatch) {
       alert(`Milestone total (${milestoneSum} XLM) must equal total escrow amount (${totalVal} XLM).`);
       return;
@@ -179,8 +192,16 @@ export const CreateEscrowPage: React.FC<CreateEscrowPageProps> = ({
                 value={freelancer}
                 onChange={(e) => setFreelancer(e.target.value)}
                 placeholder="G..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                className={`w-full bg-slate-900 border ${
+                  isSelfAddress ? 'border-rose-500/80' : 'border-slate-800'
+                } rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-emerald-500 font-mono`}
               />
+              {isSelfAddress && (
+                <p className="text-[11px] text-rose-400 font-mono mt-1.5 flex items-center space-x-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Freelancer wallet address cannot be the same as your connected client wallet address.</span>
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -337,7 +358,7 @@ export const CreateEscrowPage: React.FC<CreateEscrowPageProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isAmountMismatch}
+              disabled={isSubmitting || isAmountMismatch || isSelfAddress}
               className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white text-xs font-bold px-8 py-3 rounded-xl transition shadow-lg shadow-indigo-600/25"
             >
               {isSubmitting ? 'Deploying to Soroban...' : 'Deploy & Lock Funds'}

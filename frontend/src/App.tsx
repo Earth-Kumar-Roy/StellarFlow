@@ -12,6 +12,7 @@ import { DocsPage } from './pages/DocsPage';
 import { useWallet } from './hooks/useWallet';
 import { useEscrow } from './hooks/useEscrow';
 import { STELLAR_CONFIG } from './config/stellar';
+import type { Escrow } from './types/escrow';
 
 import { ExternalLink, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
@@ -167,15 +168,15 @@ export default function App() {
                   isSubmitting={isSubmitting}
                   onFetchEscrow={handleFetchEscrow}
                   onSubmitWorkForReview={submitWorkForReview}
-                  onApproveMilestone={async (id: number) => {
+                  onApproveMilestone={async (id: number, targetEscrow?: Escrow) => {
                     if (publicKey) {
-                      await approveMilestone(publicKey, id);
+                      await approveMilestone(publicKey, id, targetEscrow);
                       await refreshBalance();
                     }
                   }}
-                  onRefundExpired={async () => {
+                  onRefundExpired={async (targetEscrow?: Escrow) => {
                     if (publicKey) {
-                      await refundExpired(publicKey);
+                      await refundExpired(publicKey, targetEscrow);
                       await refreshBalance();
                     }
                   }}
@@ -189,6 +190,7 @@ export default function App() {
               element={
                 <CreateEscrowPage
                   isSubmitting={isSubmitting}
+                  publicKey={publicKey}
                   onSubmit={handleCreateEscrowSubmit}
                 />
               }
