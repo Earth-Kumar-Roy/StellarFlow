@@ -20,6 +20,10 @@ https://stellar-flow-nine.vercel.app/
 
 https://github.com/Earth-Kumar-Roy/StellarFlow
 
+### 🔎 Testnet Contract Explorer
+
+https://stellar.expert/explorer/testnet/contract/CBNFHUIF74UPRUQ3JM45ZJCOT6MKW6JUXJ6SICGOPFHH2U6TE2UVURPS
+
 ### 🎥 Demo Video
 
 https://drive.google.com/file/d/1O3dk2ECn6y7M0LR0811sXVriUs0NWygM/view?usp=drive_link
@@ -158,7 +162,9 @@ https://github.com/Earth-Kumar-Roy/StellarFlow/tree/main/frontend/public/screens
 # 📊 Live Feedback & Activity Proof
 
 - A **proper Feedback Summary** is present on the Feedback Page.
-- **Huge numbers of transactions** have been done using many different different wallets — this can be seen on the **testnet contract explorer page** and the **Activity Log page when no wallet is connected**.
+- **Huge numbers of transactions** have been done using many different different wallets — this can be seen on the **testnet contract explorer page** and the **Activity Log page**, even **when no wallet is connected**.
+- Live on-chain contract activity can be verified directly on Stellar Expert:
+  https://stellar.expert/explorer/testnet/contract/CBNFHUIF74UPRUQ3JM45ZJCOT6MKW6JUXJ6SICGOPFHH2U6TE2UVURPS
 
 ---
 
@@ -192,6 +198,13 @@ https://github.com/Earth-Kumar-Roy/StellarFlow/tree/main/frontend/public/screens
 
 - Freighter Wallet API
 - Stellar JavaScript SDK
+
+---
+
+## Off-Chain Services
+
+- Google Apps Script
+- Google Sheets (activity & feedback logging)
 
 ---
 
@@ -307,6 +320,10 @@ Vercel
 **Blockchain**
 
 Stellar Testnet (Soroban)
+
+**Contract Explorer**
+
+https://stellar.expert/explorer/testnet/contract/CBNFHUIF74UPRUQ3JM45ZJCOT6MKW6JUXJ6SICGOPFHH2U6TE2UVURPS
 
 ---
 
