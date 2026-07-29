@@ -195,13 +195,6 @@ https://github.com/Earth-Kumar-Roy/StellarFlow/tree/main/frontend/public/screens
 
 ---
 
-## Off-Chain Services
-
-- Google Apps Script
-- Google Sheets (activity & feedback logging)
-
----
-
 ## Development
 
 - GitHub Actions
