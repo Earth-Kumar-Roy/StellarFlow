@@ -27,8 +27,15 @@ export function useWallet() {
       const nativeBalance = data.balances?.find(
         (b: any) => b.asset_type === 'native'
       );
-      if (nativeBalance) {
-        setXlmBalance(parseFloat(nativeBalance.balance).toFixed(2));
+      if (nativeBalance && nativeBalance.balance) {
+        // Truncate to 4 decimal places without rounding up
+        const rawStr = nativeBalance.balance.toString();
+        const parts = rawStr.split('.');
+        if (parts.length > 1) {
+          setXlmBalance(`${parts[0]}.${parts[1].substring(0, 4)}`);
+        } else {
+          setXlmBalance(`${parts[0]}.00`);
+        }
       } else {
         setXlmBalance('0.00');
       }

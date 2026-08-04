@@ -36,30 +36,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onApproveMilestone,
   onRefundExpired,
 }) => {
-  // Merge live on-chain escrow with locally saved user escrows
+  // Merge live on-chain escrow with locally saved user escrows, filtered by participant wallet
   const displayEscrows: Escrow[] = useMemo(() => {
+    if (!publicKey) return [];
+
+    const activeKey = publicKey.trim().toLowerCase();
     const combinedMap = new Map<string, Escrow>();
 
+    const isUserParticipant = (e: Escrow) => {
+      const isClient = e.client?.toLowerCase() === activeKey;
+      const isFreelancer = e.freelancer?.toLowerCase() === activeKey;
+      return isClient || isFreelancer;
+    };
+
+    // 1. Process local history for connected wallet
     userEscrows.forEach((e) => {
-      const key = `${e.client}_${e.freelancer}_${e.deadline}`;
-      combinedMap.set(key, e);
+      if (e?.client && e?.freelancer && isUserParticipant(e)) {
+        const key = `${e.client.toLowerCase()}_${e.freelancer.toLowerCase()}_${e.deadline}`;
+        combinedMap.set(key, e);
+      }
     });
 
-    if (escrow) {
-      const liveKey = `${escrow.client}_${escrow.freelancer}_${escrow.deadline}`;
+    // 2. Include live RPC contract ONLY if connected wallet is a participant
+    if (escrow?.client && escrow?.freelancer && isUserParticipant(escrow)) {
+      const liveKey = `${escrow.client.toLowerCase()}_${escrow.freelancer.toLowerCase()}_${escrow.deadline}`;
       combinedMap.set(liveKey, escrow);
     }
 
     return Array.from(combinedMap.values());
-  }, [escrow, userEscrows]);
+  }, [escrow, userEscrows, publicKey]);
 
-  const isClient = publicKey && displayEscrows.some((e) => e.client === publicKey);
-  const isFreelancer = publicKey && displayEscrows.some((e) => e.freelancer === publicKey);
+  const activeKey = publicKey ? publicKey.trim().toLowerCase() : '';
+
+  const isClient = Boolean(
+    activeKey && displayEscrows.some((e) => e.client?.toLowerCase() === activeKey)
+  );
+
+  const isFreelancer = Boolean(
+    activeKey && displayEscrows.some((e) => e.freelancer?.toLowerCase() === activeKey)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
       
-      {/* Top Banner & Control Row */}
+      {/* Top Banner Control Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-6 rounded-3xl">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -74,7 +94,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <button
             onClick={() => onFetchEscrow(publicKey)}
             disabled={isFetching}
-            className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700/80 transition"
+            className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700/80 transition cursor-pointer"
             title="Refresh Ledger State"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
@@ -101,9 +121,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Role Context Notification Banner */}
       {publicKey && displayEscrows.length > 0 && (
-        <div className="p-4 rounded-2xl border backdrop-blur-md transition-all">
+        <div className="p-4 rounded-2xl border backdrop-blur-md transition-all bg-slate-900/40 border-slate-800/80 space-y-2">
           {isClient && (
-            <div className="flex items-center space-x-3 text-indigo-300 bg-indigo-950/40 border-indigo-500/30 p-3.5 rounded-xl border mb-2">
+            <div className="flex items-center space-x-3 text-indigo-300 bg-indigo-950/40 border-indigo-500/30 p-3.5 rounded-xl border">
               <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" />
               <div className="text-xs">
                 <strong className="text-indigo-200">Logged in as Client:</strong> You have authority to review submitted milestones and authorize payout releases to the freelancer.
