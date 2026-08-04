@@ -28,6 +28,14 @@ https://stellar.expert/explorer/testnet/contract/CBNFHUIF74UPRUQ3JM45ZJCOT6MKW6J
 
 https://drive.google.com/file/d/1O3dk2ECn6y7M0LR0811sXVriUs0NWygM/view?usp=drive_link
 
+---
+
+### 📝 Level 4 Revision Update & Feedback Audit
+
+- **Feedback Page Enhancement**: Fully updated with real-time aggregate analytics, including **Total Feedback Count**, **Participating Wallets Interaction Counter**, and **Average Star Rating**.
+- **User Feedback & Audit Spreadsheet**: https://docs.google.com/spreadsheets/d/14RQ2lbUCWGO36NkopM9LQS3qh0IovK_A1FJGf32xE3U/edit?gid=1379987127#gid=1379987127  
+  *(All individual and recurring community feedback submissions can be verified directly from this audit ledger.)*
+
 </div>
 
 ---
