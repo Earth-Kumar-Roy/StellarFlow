@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Escrow } from '../types/escrow';
 import { EscrowStatus } from '../types/escrow';
 import { MilestoneTracker } from './MilestoneTracker';
+import { InvoiceMaker } from './InvoiceMaker';
 import { 
   ShieldCheck, 
   UserCheck, 
@@ -11,7 +12,8 @@ import {
   AlertCircle, 
   Mail, 
   User,
-  ArrowUpRight
+  ArrowUpRight,
+  FileText
 } from 'lucide-react';
 
 export interface EscrowCardProps {
@@ -31,6 +33,8 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
   onApproveMilestone,
   onRefundExpired,
 }) => {
+  const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
+
   const isClient = userAddress ? userAddress.toLowerCase() === escrow.client.toLowerCase() : false;
   const isFreelancer = userAddress ? userAddress.toLowerCase() === escrow.freelancer.toLowerCase() : false;
 
@@ -38,7 +42,12 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
   const allMilestonesCompleted = escrow.milestones.length > 0 && 
     escrow.milestones.every((m) => m.isCompleted);
 
-  const activeStatus = allMilestonesCompleted ? EscrowStatus.Completed : escrow.status;
+  // Check if fully settled: releasedAmount >= totalAmount
+  const totalAmountNum = parseFloat(escrow.totalAmount || '0');
+  const releasedAmountNum = parseFloat(escrow.releasedAmount || '0');
+  const isFullySettled = (totalAmountNum > 0 && releasedAmountNum >= totalAmountNum) || allMilestonesCompleted;
+
+  const activeStatus = isFullySettled ? EscrowStatus.Completed : escrow.status;
 
   // Live Countdown State
   const [timeLeft, setTimeLeft] = useState<{
@@ -118,13 +127,26 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
           </h2>
         </div>
 
-        <span
-          className={`text-xs font-bold px-4 py-1.5 rounded-full border uppercase tracking-wider shadow-sm ${getStatusBadge(
-            activeStatus
-          )}`}
-        >
-          {activeStatus}
-        </span>
+        <div className="flex items-center space-x-3">
+          {/* Download Invoice Button - Visible when 100% settled */}
+          {isFullySettled && (
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full transition shadow-lg shadow-emerald-600/25 border border-emerald-500/40 cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Download Invoice</span>
+            </button>
+          )}
+
+          <span
+            className={`text-xs font-bold px-4 py-1.5 rounded-full border uppercase tracking-wider shadow-sm ${getStatusBadge(
+              activeStatus
+            )}`}
+          >
+            {activeStatus}
+          </span>
+        </div>
       </div>
 
       {/* Top Stat Cards Grid */}
@@ -156,8 +178,34 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
         </div>
       </div>
 
+      {/* Completed & Settled Invoice Quick-Access Banner */}
+      {isFullySettled && (
+        <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-4 my-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-300 font-mono uppercase tracking-wider">
+                100% Milestones Settled & Released
+              </h4>
+              <p className="text-xs text-slate-300">
+                All milestone payouts have been released to the freelancer. An official PDF settlement invoice is available.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-emerald-600/20 cursor-pointer shrink-0"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Generate PDF Invoice</span>
+          </button>
+        </div>
+      )}
+
       {/* Countdown Timer Display */}
-      {activeStatus === EscrowStatus.Active && (
+      {!isFullySettled && activeStatus === EscrowStatus.Active && (
         <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-5 my-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20">
@@ -303,11 +351,19 @@ export const EscrowCard: React.FC<EscrowCardProps> = ({
           <button
             onClick={() => onRefundExpired(escrow)}
             disabled={isSubmitting}
-            className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold px-6 py-3 rounded-xl transition duration-150 shadow-lg shadow-rose-600/30 whitespace-nowrap"
+            className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-bold px-6 py-3 rounded-xl transition duration-150 shadow-lg shadow-rose-600/30 whitespace-nowrap cursor-pointer"
           >
             {isSubmitting ? 'Processing Refund...' : 'Claim Expired Refund'}
           </button>
         </div>
+      )}
+
+      {/* PDF Settlement Invoice Modal */}
+      {showInvoiceModal && (
+        <InvoiceMaker
+          escrow={escrow}
+          onClose={() => setShowInvoiceModal(false)}
+        />
       )}
 
     </div>
