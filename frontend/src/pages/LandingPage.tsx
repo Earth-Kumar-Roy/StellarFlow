@@ -9,7 +9,8 @@ import {
   Briefcase, 
   Sparkles,
   ExternalLink,
-  Database
+  Database,
+  FileText,
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
@@ -27,7 +28,7 @@ export const LandingPage: React.FC = () => {
           {/* Badge */}
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 text-xs font-mono font-bold tracking-wide shadow-lg shadow-indigo-950/50">
             <Sparkles className="w-4 h-4 text-indigo-400 animate-spin" />
-            <span>Next-Gen Non-Custodial Soroban Milestone Vaults</span>
+            <span>Next-Gen Soroban Escrow & Dynamic Invoicing Engine</span>
           </div>
 
           {/* Heading */}
@@ -40,7 +41,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-sans leading-relaxed">
-            StellarFlow locks payments cryptographically on Stellar Testnet. Milestone-based payouts release automatically upon approval with full audit trails and automated email notifications.
+            StellarFlow locks payments cryptographically on Stellar Testnet. Milestone-based payouts release automatically upon approval, with downloadable settlement PDF invoices, full audit trails, and automated email alerts.
           </p>
 
           {/* Call to Action Buttons */}
@@ -59,7 +60,7 @@ export const LandingPage: React.FC = () => {
               rel="noreferrer"
               className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800/90 text-slate-200 border border-slate-800 rounded-2xl text-sm font-bold transition hover:border-slate-700 flex items-center justify-center space-x-2 shadow-lg"
             >
-              <span>Open Project Demo Site</span>
+              <span>Open Project Demo Video</span>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
             </a>
           </div>
@@ -79,8 +80,8 @@ export const LandingPage: React.FC = () => {
               <span className="text-[11px] text-slate-400 block">On-Chain Audit</span>
             </div>
             <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-2xl backdrop-blur-md">
-              <span className="text-2xl font-bold text-amber-400">7-Day</span>
-              <span className="text-[11px] text-slate-400 block">Refund Protection</span>
+              <span className="text-2xl font-bold text-amber-400">PDF</span>
+              <span className="text-[11px] text-slate-400 block">Settlement Invoices</span>
             </div>
           </div>
         </div>
@@ -91,41 +92,52 @@ export const LandingPage: React.FC = () => {
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <h2 className="text-3xl font-black text-white">Why Choose StellarFlow?</h2>
           <p className="text-xs sm:text-sm text-slate-400">
-            Eliminating payment delays, fraudulent chargebacks, and central intermediary fees.
+            Eliminating payment delays, fraudulent chargebacks, manual accounting, and central intermediary fees.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Feature 1 */}
-          <div className="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl space-y-4 hover:border-indigo-500/40 transition group">
+          <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-3xl space-y-4 hover:border-indigo-500/40 transition group">
             <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">Non-Custodial Escrow Vaults</h3>
+            <h3 className="text-base font-bold text-white">Non-Custodial Escrow</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Funds are held directly inside Soroban smart contract WASM bytecode on-chain. Neither client, freelancer, nor platform admins can extract funds arbitrarily.
+              Funds are locked inside Soroban smart contract WASM bytecode. Neither client, freelancer, nor platform admins can extract funds arbitrarily.
             </p>
           </div>
 
           {/* Feature 2 */}
-          <div className="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl space-y-4 hover:border-emerald-500/40 transition group">
+          <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-3xl space-y-4 hover:border-emerald-500/40 transition group">
             <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
               <Zap className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">Granular Milestone Releases</h3>
+            <h3 className="text-base font-bold text-white">Granular Milestones</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Projects split into dynamic milestone stages. As freelancers complete work items, clients review deliverables and release funds incrementally.
+              Split agreements into clear deliverables. As freelancers submit items, clients review proof-of-work and release payouts incrementally.
             </p>
           </div>
 
-          {/* Feature 3 */}
-          <div className="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl space-y-4 hover:border-violet-500/40 transition group">
+          {/* Feature 3: NEW INVOICING ENGINE */}
+          <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-3xl space-y-4 hover:border-amber-500/40 transition group">
+            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
+              <FileText className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-white">Settlement PDF Invoices</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Generate and download standardized, tax-compliant PDF settlement receipts with itemized milestones, wallet addresses, and on-chain ledger hashes.
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-3xl space-y-4 hover:border-violet-500/40 transition group">
             <div className="w-12 h-12 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-2xl flex items-center justify-center group-hover:scale-110 transition">
               <Database className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">Audit Trail & Email Alerts</h3>
+            <h3 className="text-base font-bold text-white">Audit Trail & Alerts</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Every on-chain event triggers real-time data persistence via Google Apps Script and dispatches personalized email updates to all contract parties.
+              Every on-chain event logs to Google Apps Script audit ledgers and dispatches real-time automated email updates to counterparties.
             </p>
           </div>
         </div>
@@ -137,7 +149,7 @@ export const LandingPage: React.FC = () => {
           <div className="max-w-2xl space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black text-white">Built for the Global Web3 Ecosystem</h2>
             <p className="text-xs sm:text-sm text-slate-400">
-              Designed to serve freelancers, DAOs, agencies, and individual clients seeking verifiable contract execution.
+              Designed to serve freelancers, DAOs, agencies, and individual clients seeking verifiable contract execution and automated billing.
             </p>
           </div>
 
@@ -154,7 +166,7 @@ export const LandingPage: React.FC = () => {
               <Briefcase className="w-6 h-6 text-emerald-400" />
               <h3 className="text-sm font-bold text-white">Freelance Developers</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Work with confidence knowing 100% of the project budget is cryptographically locked before starting line 1 of code.
+                Lock 100% of project budgets upfront and export professional settlement invoices directly to clients upon completion.
               </p>
             </div>
 
@@ -162,7 +174,7 @@ export const LandingPage: React.FC = () => {
               <Code2 className="w-6 h-6 text-violet-400" />
               <h3 className="text-sm font-bold text-white">Agencies & Clients</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Maintain complete authority to approve or request revisions on individual milestones prior to token release.
+                Maintain complete authority to approve deliverables prior to token release, backed by itemized financial receipts.
               </p>
             </div>
           </div>
@@ -174,7 +186,7 @@ export const LandingPage: React.FC = () => {
         <div className="text-center space-y-2 max-w-xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-black text-white">How It Works in 4 Steps</h2>
           <p className="text-xs text-slate-400">
-            From wallet connection to milestone completion in minutes.
+            From wallet connection to escrow settlement and PDF invoicing in minutes.
           </p>
         </div>
 
@@ -191,23 +203,23 @@ export const LandingPage: React.FC = () => {
             <span className="text-xs font-bold text-amber-400">Step 02</span>
             <h3 className="text-sm font-bold text-white font-sans">Lock Agreement</h3>
             <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Define milestones and lock total budget inside the Soroban WASM contract.
+              Define milestone deliverables and lock total budget in the Soroban contract.
             </p>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-2xl space-y-3 relative">
             <span className="text-xs font-bold text-emerald-400">Step 03</span>
-            <h3 className="text-sm font-bold text-white font-sans">Submit & Review</h3>
+            <h3 className="text-sm font-bold text-white font-sans">Submit & Release</h3>
             <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Freelancer submits work deliverables for client verification.
+              Freelancer submits work deliverables and client authorizes instant payout releases.
             </p>
           </div>
 
           <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-2xl space-y-3 relative">
             <span className="text-xs font-bold text-violet-400">Step 04</span>
-            <h3 className="text-sm font-bold text-white font-sans">Approve Payout</h3>
+            <h3 className="text-sm font-bold text-white font-sans">Export PDF Invoice</h3>
             <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Client approves milestone to instantly transfer XLM payout to freelancer.
+              Download formal PDF settlement receipts verifying on-chain completion.
             </p>
           </div>
         </div>
@@ -219,7 +231,7 @@ export const LandingPage: React.FC = () => {
           <div className="space-y-2 max-w-xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-black text-white">Ready to Secure Your Web3 Contracts?</h2>
             <p className="text-xs sm:text-sm text-indigo-200">
-              Initialize your first milestone escrow agreement on Stellar Testnet right now.
+              Initialize your first milestone escrow agreement on Stellar Testnet and generate verifiable invoices today.
             </p>
           </div>
 
