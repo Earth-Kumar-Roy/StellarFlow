@@ -62,6 +62,7 @@ The application demonstrates production-ready smart contract architecture, multi
 - Cryptographically lock XLM funds
 - Programmatic multi-stage payouts
 - Non-custodial, on-chain fund custody
+- Invoicing 
 
 ---
 
