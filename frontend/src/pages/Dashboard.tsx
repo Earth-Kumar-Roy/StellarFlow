@@ -6,9 +6,6 @@ import {
   PlusCircle, 
   RefreshCw, 
   Layers, 
-  ShieldCheck, 
-  UserCheck, 
-  Eye, 
   MessageSquare,
   ArrowRight
 } from 'lucide-react';
@@ -66,16 +63,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return Array.from(combinedMap.values());
   }, [escrow, userEscrows, publicKey]);
 
-  const activeKey = publicKey ? publicKey.trim().toLowerCase() : '';
-
-  const isClient = Boolean(
-    activeKey && displayEscrows.some((e) => e.client?.toLowerCase() === activeKey)
-  );
-
-  const isFreelancer = Boolean(
-    activeKey && displayEscrows.some((e) => e.freelancer?.toLowerCase() === activeKey)
-  );
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
       
@@ -118,36 +105,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </NavLink>
         </div>
       </div>
-
-      {/* Role Context Notification Banner */}
-      {publicKey && displayEscrows.length > 0 && (
-        <div className="p-4 rounded-2xl border backdrop-blur-md transition-all bg-slate-900/40 border-slate-800/80 space-y-2">
-          {isClient && (
-            <div className="flex items-center space-x-3 text-indigo-300 bg-indigo-950/40 border-indigo-500/30 p-3.5 rounded-xl border">
-              <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0" />
-              <div className="text-xs">
-                <strong className="text-indigo-200">Logged in as Client:</strong> You have authority to review submitted milestones and authorize payout releases to the freelancer.
-              </div>
-            </div>
-          )}
-          {isFreelancer && (
-            <div className="flex items-center space-x-3 text-emerald-300 bg-emerald-950/40 border-emerald-500/30 p-3.5 rounded-xl border">
-              <UserCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="text-xs">
-                <strong className="text-emerald-200">Logged in as Freelancer:</strong> Submit work for review on active milestones to alert the client for release.
-              </div>
-            </div>
-          )}
-          {!isClient && !isFreelancer && (
-            <div className="flex items-center space-x-3 text-slate-300 bg-slate-900/60 border-slate-700/60 p-3.5 rounded-xl border">
-              <Eye className="w-5 h-5 text-slate-400 shrink-0" />
-              <div className="text-xs">
-                <strong className="text-slate-200">Observer Mode:</strong> Your wallet is not a primary participant in these contract agreements.
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Main Content Area */}
       {isFetching && displayEscrows.length === 0 ? (
