@@ -30,8 +30,10 @@ https://drive.google.com/file/d/1O3dk2ECn6y7M0LR0811sXVriUs0NWygM/view?usp=drive
 
 ---
 
-### 📝 Level 4 Revision Update & Feedback Audit
 
+### 📝 Level 4 Revision Update & Major Enhancements
+
+- **Official PDF Settlement Invoicing Engine**: Implemented an automated on-chain settlement invoicing system (`InvoiceMaker.tsx`). Both **Client** and **Freelancer** can view, generate, and download print-ready PDF settlement receipts with verified wallet public keys, itemized milestone breakdowns, and on-chain Soroban contract identifiers once all milestones are settled.
 - **Feedback Page Enhancement**: Fully updated with real-time aggregate analytics, including **Total Feedback Count**, **Participating Wallets Interaction Counter**, and **Average Star Rating**.
 - **In-App Community Feedback Ledger**: https://docs.google.com/spreadsheets/d/14RQ2lbUCWGO36NkopM9LQS3qh0IovK_A1FJGf32xE3U/edit?gid=1379987127#gid=1379987127  
   *(Verifiable log of direct on-chain and dApp counterparty reviews.)*
